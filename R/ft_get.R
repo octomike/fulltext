@@ -677,6 +677,14 @@ get_unknown <- function(x, type, try_unknown, progress = FALSE, ...) {
       out[[ pub_nm ]] <- fun(tm_nm, dfsplit[[i]]$doi, list(), type,
         url_pattern, progress = progress, ...)
     }
+    # Neither publisher nor fallback plugon succeeded. Arrr!
+    if(!all(is.na(out[[ pub_nm ]]$errors$error))) {
+      pub_nm <- get_pub_name(names(dfsplit)[i])
+      type <- 'pdf'
+      warning("Blimey! No loot for ", pub_nm, ", looking elsewhere.", call. = FALSE)
+      out[[ pub_nm ]] <- plugin_get_arrr('arrr', dfsplit[[i]]$doi, list(), type,
+        url_pattern, progresss = progress, ...)
+    }
   }
   structure(out, class = "ft_data")
 }

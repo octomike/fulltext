@@ -206,6 +206,7 @@ plugin_get_instinvestfil <- plugin_get_generator("instinvestfil", instinvestfil_
 plugin_get_aip <- plugin_get_generator("aip", aip_ft)
 plugin_get_cambridge <- plugin_get_generator("cambridge", cambridge_ft)
 plugin_get_cob <- plugin_get_generator("cob", cob_ft)
+plugin_get_arrr <- plugin_get_generator("arrr", arrr_ft)
 
 # lapply replacement with progress bar: actual a for loop internally
 plapply <- function(x, FUN, type = NULL, progress = FALSE, ...) {
@@ -884,4 +885,26 @@ got_link_ft <- function(dois, type, url_pattern, progress = FALSE, ...) {
     get_ft(x, type, url, path, ...)
   }
   plapply(dois, link_fun, type, progress, ...)
+}
+
+# type: pdf
+arrr_ft <- function(dois, type, progress = FALSE, ...) {
+  type_in(type, c('pdf'), "arrr")
+  arrr_fun <- function(x, type, progress, ...) {
+    path <- make_key(x, type)
+    if (file.exists(path) && !cache_options_get()$overwrite) {
+      if (!progress) message(paste0("path exists: ", path))
+      return(ft_object(path, x, type))
+    }
+    url <- sprintf("https://sci-hub.tw/%s", x)
+    cli <- crul::HttpClient$new(url = url, opts = c(list(followlocation = 1)))
+    res <- tryCatch(cli$get(),
+      error = function(e) e,
+      warning = function(w) w)
+    html <- read_html(res$parse(encoding='utf-8'))
+    div <- xml_find_all(html, '//div[@id="article"]//iframe/@src')
+    url <- sub('.*(http.*)#.*', '\\1', as.character(es), perl=T)
+    get_ft(x, type, url, path, ignore_ct = TRUE, ...)
+  }
+  plapply(dois, arrr_fun, type, progress, ...)
 }
